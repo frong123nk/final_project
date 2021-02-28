@@ -1,0 +1,1 @@
+enum TimeInterval { Onehour, Twohour }
