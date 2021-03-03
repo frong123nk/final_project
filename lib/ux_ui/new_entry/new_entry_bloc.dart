@@ -1,6 +1,7 @@
 import 'package:project_final_v2/model/errors.dart';
 import 'package:project_final_v2/model/medicine_type.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class NewEntryBloc {
   BehaviorSubject<MedicineType> _selectedMedicineType$;
@@ -9,7 +10,7 @@ class NewEntryBloc {
 
   // BehaviorSubject<List<Day>> _checkedDays$;
   // BehaviorSubject<List<Day>> get checkedDays$ => _checkedDays$;
-
+  final databaseReference = FirebaseDatabase.instance.reference();
   BehaviorSubject<int> _selectedInterval$;
   BehaviorSubject<int> get selectedInterval$ => _selectedInterval$;
 

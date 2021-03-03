@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 //import 'package:medicine_reminder/src/common/convert_time.dart';
 import 'package:project_final_v2/global_bloc.dart';
@@ -19,7 +20,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:project_final_v2/time_countdown.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
-
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../med_detail.dart';
 
 List gobalselectimeHour = new List(12);
@@ -75,7 +77,7 @@ class _NewEntryState extends State<NewEntry2> {
   @override
   Widget build(BuildContext context) {
     final GlobalBloc _globalBloc = Provider.of<GlobalBloc>(context);
-
+    final databaseReference = FirebaseDatabase.instance.reference();
     return Scaffold(
       key: _scaffoldKey,
       resizeToAvoidBottomPadding: false,
@@ -301,7 +303,6 @@ class _NewEntryState extends State<NewEntry2> {
                     onPressed: () {
                       String medicineName;
                       int dosage;
-
                       //--------------------Error Checking------------------------
                       //Had to do error checking in UI
                       //Due to unoptimized BLoC value-grabbing architecture
@@ -613,6 +614,7 @@ class DatSelection extends StatefulWidget {
 }
 
 class _DatSelectionState extends State<DatSelection> {
+  final databaseReference = FirebaseDatabase.instance.reference();
   var _visibleWeekly = false;
   var _visibleMultiday = false;
   var colorWeekly = false;
@@ -636,6 +638,14 @@ class _DatSelectionState extends State<DatSelection> {
                 ),
                 color: colorWeekly ? Colors.green : Colors.green[50],
                 onPressed: () {
+                  databaseReference
+                      .child("flutterDevsTeam1")
+                      .push()
+                      .child('Team')
+                      .set(
+                          {'name': 'Deepak Nishad', 'description': 'Team Lead'})
+                      .then((value) => print("success"))
+                      .asStream();
                   setState(() {
                     if (_visibleWeekly == true) {
                       _visibleWeekly = false;
