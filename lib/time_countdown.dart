@@ -51,7 +51,7 @@ class TimerService extends ChangeNotifier {
 
     _timer = Timer.periodic(Duration(seconds: 1), _onTick);
     _watch.start();
-
+    print("notify_staet");
     notifyListeners();
   }
 
@@ -60,7 +60,7 @@ class TimerService extends ChangeNotifier {
     _timer = null;
     _watch.stop();
     _currentDuration = _watch.elapsed;
-
+    print("notify_stop");
     notifyListeners();
   }
 
@@ -68,7 +68,7 @@ class TimerService extends ChangeNotifier {
     stop();
     _watch.reset();
     _currentDuration = Duration.zero;
-
+    print("notify_reset");
     notifyListeners();
   }
 

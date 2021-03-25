@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:project_final_v2/ux_ui/homepage.dart';
@@ -6,10 +8,14 @@ import 'package:provider/provider.dart';
 import 'global_bloc.dart';
 import 'time_countdown.dart';
 
-void main() {
+void main() async {
   final timerService = TimerService();
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  WidgetsFlutterBinding.ensureInitialized();
+  IsolateNameServer.registerPortWithName(
+    port.sendPort,
+    isolateName,
+  );
+
   runApp(TimerServiceProvider(
     service: timerService,
     child: MedicineReminder(),

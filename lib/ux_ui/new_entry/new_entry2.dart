@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:isolate';
 import 'dart:math';
+import 'dart:ui';
+import 'package:intl/intl.dart';
+import 'package:android_alarm_manager/android_alarm_manager.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 //import 'package:medicine_reminder/src/common/convert_time.dart';
@@ -18,11 +23,20 @@ import 'package:day_night_time_picker/day_night_time_picker.dart';
 import 'package:day_night_time_picker/lib/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:project_final_v2/time_countdown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../med_detail.dart';
+import 'package:project_final_v2/main.dart';
+
+/// The name associated with the UI isolate's [SendPort].
+const String isolateName = 'isolate';
+const String dateKey = 'date';
+
+/// A port used to communicate from a background isolate to the UI isolate.
+final ReceivePort port = ReceivePort();
 
 List gobalselectimeHour = new List(12);
 List gobalselectimeMinite = new List(12);
@@ -64,6 +78,7 @@ class _NewEntryState extends State<NewEntry2> {
   }
 
   void initState() {
+    AndroidAlarmManager.initialize();
     _newEntryBloc = NewEntryBloc();
     nameController = TextEditingController();
     dosageController = TextEditingController();
@@ -388,7 +403,6 @@ class _NewEntryState extends State<NewEntry2> {
                         selectDay: selectDay,
                         selectWeekly: selectWeekly,
                       );
-
                       _globalBloc.updateMedicineList(newEntryMedicine);
                       scheduleNotification(newEntryMedicine);
 
@@ -514,14 +528,71 @@ class _NewEntryState extends State<NewEntry2> {
         onSelectNotification: onSelectNotification);
   }
 
+  static SendPort uiSendPort;
+  upDate(int i) {
+    final databaseReference = FirebaseDatabase.instance.reference();
+    databaseReference.child('').update({
+      'Day': i,
+    }).then((value) => print("success"));
+    return "day + $i";
+  }
+
+  int minuteval;
+  static Future<void> callback2(int date) async {
+    // var day = date.toString().substring();
+    final databaseReference = FirebaseDatabase.instance.reference();
+
+    var sDay;
+    switch (date.toString().substring(0, 1)) {
+      case '1':
+        sDay = 'Monday';
+        break;
+      case '2':
+        sDay = 'Tuesday';
+        break;
+      case '3':
+        sDay = 'Wednesday';
+        break;
+      case '4':
+        sDay = 'Thursday';
+        break;
+      case '5':
+        sDay = 'Friday';
+        break;
+      case '6':
+        sDay = 'Saturday';
+        break;
+      case '7':
+        sDay = 'Sunday';
+        break;
+      default:
+    }
+    databaseReference.child('').update({
+      'Day': sDay,
+      'Time':
+          date.toString().substring(1, 3) + ":" + date.toString().substring(3),
+    });
+    print('Alarm fired!' +
+        '$date' +
+        "day" +
+        '${date.toString().substring(0, 1)}');
+    // Get the previous cached count and increment it.
+
+    // This will be null if we're running in the background.
+    uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
+    uiSendPort?.send(null);
+  }
+
   Future onSelectNotification(String payload) async {
     if (payload != null) {
       debugPrint('notification payload: ' + payload);
     }
-    await Navigator.push(context, MaterialPageRoute(builder: (coontext) {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) {
       return NotificationClick();
     }));
   }
+
+  String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
   Future<void> scheduleNotification(Medicine medicine) async {
     int x;
@@ -531,7 +602,8 @@ class _NewEntryState extends State<NewEntry2> {
     var ogValue = hour;
     // var minute = int.parse(medicine.startTime[2] + medicine.startTime[3]);
     var ogmValue = minute;
-
+    int code_day;
+    var setdate;
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'repeatDailyAtTime channel id',
       'repeatDailyAtTime channel name',
@@ -551,46 +623,100 @@ class _NewEntryState extends State<NewEntry2> {
     if (hour == 0) {
       print(null);
     }
+    for (int i = 0; i < selectedMultiDay.length; i++) {
+      var day = DateFormat('E').format(selectedMultiDay[i]);
+      setdate = DateFormat('yyyy-MM-dd').format(selectedMultiDay[i]);
+      switch (day) {
+        case "Mon":
+          code_day = 1;
+          break;
+        case "Tue":
+          code_day = 2;
+          break;
+        case "Wed":
+          code_day = 3;
+          break;
+        case "Thu":
+          code_day = 4;
+          break;
+        case "Fri":
+          code_day = 5;
+          break;
+        case "Sat":
+          code_day = 6;
+          break;
+        case "Sun":
+          code_day = 7;
+          break;
+        default:
+      }
+      print("day : $code_day");
+      for (int i = 0; i < medicine.interval.floor(); i++) {
+        hour = int.parse(gobalselectimeHour[i]);
+        minute = int.parse(gobalselectimeMinite[i]);
+        print("gobalselectimeMinite : " + '${gobalselectimeMinite[i]}');
+        var h = hour;
+        var m = minute;
+        String hs = gobalselectimeHour[i];
+        String ms = gobalselectimeMinite[i];
+        String str1 = "hello";
+        String str2 = "world";
+        String res = str1 + str2;
+        print("The concatenated string : ${res}");
+        String dates = code_day.toString() + h.toString() + m.toString();
+        int d = int.parse(dates);
+        print("The concatenated string : ${d}");
+        // var dateint = int.tryParse(date);
 
-    for (int i = 0; i < medicine.interval.floor(); i++) {
-      hour = int.parse(gobalselectimeHour[i]);
-      minute = int.parse(gobalselectimeMinite[i]);
-      //print(hour);
-      // if ((hour + (medicine.interval * i) > 23)) {
-      //   // hour = hour + (medicine.interval * i) - 24; //เกิน 24 ชม
+        // String h = gobalselectimeHour[i];
+        // String m = gobalselectimeMinite[i];
 
-      //   // if (minute + (medicine.minterval * i) > 59) {
-      //   //   hour = hour + 1;
-      //   //   if (hour > 23) {
-      //   //     hour = hour + (medicine.interval * i) - 24;
-      //   //   }
-      //   //   minute = minute + (medicine.minterval * i) - 60;
-      //   // } else {
-      //   //   minute = minute + (medicine.minterval * i);
-      //   // }
-      //   hour = hour;
-      //   minute = minute + 1;
-      print("notify at : $hour : $minute");
-      // } else {
-      //   // hour = hour + (medicine.interval * i); // ไม่เกิน 24 ขม
-      //   // if (hour > 23) {
-      //   //   hour = hour + (medicine.interval * i) - 24;
-      //   // }
-      //   // if (minute + (medicine.minterval * i) > 59) {
-      //   //   hour = hour + 1;
-      //   //   minute = minute + (medicine.minterval * i) - 60;
-      //   // } else {
-      //   //   minute = minute + (medicine.minterval * i);
-      //   // }
-      //   hour = hour;
-      //   minute = minute + 1;
-      //   print("loop2 | $hour : $minute");
-      // }
-      // print("hour : $hour : minute :$minute");
-      // print("ogValue = $ogValue");
-      // print(medicine.minterval);
+        //print(hour);
+        // if ((hour + (medicine.interval * i) > 23)) {
+        //   // hour = hour + (medicine.interval * i) - 24; //เกิน 24 ชม
 
-      await flutterLocalNotificationsPlugin.showDailyAtTime(
+        //   // if (minute + (medicine.minterval * i) > 59) {
+        //   //   hour = hour + 1;
+        //   //   if (hour > 23) {
+        //   //     hour = hour + (medicine.interval * i) - 24;
+        //   //   }
+        //   //   minute = minute + (medicine.minterval * i) - 60;
+        //   // } else {
+        //   //   minute = minute + (medicine.minterval * i);
+        //   // }
+        //   hour = hour;
+        //   minute = minute + 1;
+        print("notify: $hs : $ms");
+        print("notify at : $hour : $minute");
+        // } else {
+        //   // hour = hour + (medicine.interval * i); // ไม่เกิน 24 ขม
+        //   // if (hour > 23) {
+        //   //   hour = hour + (medicine.interval * i) - 24;
+        //   // }
+        //   // if (minute + (medicine.minterval * i) > 59) {
+        //   //   hour = hour + 1;
+        //   //   minute = minute + (medicine.minterval * i) - 60;
+        //   // } else {
+        //   //   minute = minute + (medicine.minterval * i);
+        //   // }
+        //   hour = hour;
+        //   minute = minute + 1;
+        //   print("loop2 | $hour : $minute");
+        // }
+        // print("hour : $hour : minute :$minute");
+        // print("ogValue = $ogValue");
+        // print(medicine.minterval);
+        // var m = 17 + i;
+
+        await AndroidAlarmManager.oneShotAt(
+          DateTime.parse('$setdate $hour:$minute:00'),
+          // Ensure we have a unique alarm ID.
+          d,
+          callback2,
+          exact: true,
+          wakeup: true,
+        ).then((val) => print('set up:' + val.toString()));
+        await flutterLocalNotificationsPlugin.showDailyAtTime(
           int.parse(medicine.notificationIDs[i]),
           'Mediminder: ${medicine.medicineName}',
           medicine.medicineType.toString() != MedicineType.None.toString()
@@ -598,12 +724,20 @@ class _NewEntryState extends State<NewEntry2> {
               : 'It is time to take your medicine, according to schedule',
           Time(hour, minute, 0),
           platformChannelSpecifics,
-          payload: '${int.parse(medicine.notificationIDs[i])} +success');
+          payload: '${int.parse(medicine.notificationIDs[i])} +success',
+        );
+        // Timer(Duration(minutes: 30), () {
+        //   print("Yeah, this line is printed after 60 second");
+        //   upDate(minute);
+        // });
 
-      hour = ogValue;
-      minute = ogmValue;
-      // print("hour = og : $hour");
+        print('This line is printed first');
+        hour = ogValue;
+        minute = ogmValue;
+        // print("hour = og : $hour");
+      }
     }
+
     //await flutterLocalNotificationsPlugin.cancelAll();
   }
 }
@@ -614,7 +748,6 @@ class DatSelection extends StatefulWidget {
 }
 
 class _DatSelectionState extends State<DatSelection> {
-  final databaseReference = FirebaseDatabase.instance.reference();
   var _visibleWeekly = false;
   var _visibleMultiday = false;
   var colorWeekly = false;
@@ -638,14 +771,6 @@ class _DatSelectionState extends State<DatSelection> {
                 ),
                 color: colorWeekly ? Colors.green : Colors.green[50],
                 onPressed: () {
-                  databaseReference
-                      .child("flutterDevsTeam1")
-                      .push()
-                      .child('Team')
-                      .set(
-                          {'name': 'Deepak Nishad', 'description': 'Team Lead'})
-                      .then((value) => print("success"))
-                      .asStream();
                   setState(() {
                     if (_visibleWeekly == true) {
                       _visibleWeekly = false;
