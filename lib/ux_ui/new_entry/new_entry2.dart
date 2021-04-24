@@ -42,6 +42,7 @@ List gobalselectimeHour = new List(12);
 List gobalselectimeMinite = new List(12);
 List<DateTime> selectedMultiDay;
 List<dynamic> selectedWeeklyList = new List(7);
+List<dynamic> selectedWeeklyDate = new List(7);
 
 class NewEntry2 extends StatefulWidget {
   @override
@@ -583,6 +584,31 @@ class _NewEntryState extends State<NewEntry2> {
     uiSendPort?.send(null);
   }
 
+  static Future<void> callback3(int date) async {
+    // var day = date.toString().substring();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    databaseReference.child('').update({'Day': date, 'Time': date});
+    print('Alarm fired!' +
+        '$date' +
+        "day" +
+        '${date.toString().substring(0, 1)}');
+    // Get the previous cached count and increment it.
+
+    // This will be null if we're running in the background.
+    uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
+    uiSendPort?.send(null);
+  }
+
+  static Future<void> callback(int date) async {
+    // var day = date.toString().substring();
+    print('test priodic');
+    // Get the previous cached count and increment it.
+
+    // This will be null if we're running in the background.
+    uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
+    uiSendPort?.send(null);
+  }
+
   Future onSelectNotification(String payload) async {
     if (payload != null) {
       debugPrint('notification payload: ' + payload);
@@ -623,118 +649,221 @@ class _NewEntryState extends State<NewEntry2> {
     if (hour == 0) {
       print(null);
     }
-    for (int i = 0; i < selectedMultiDay.length; i++) {
-      var day = DateFormat('E').format(selectedMultiDay[i]);
-      setdate = DateFormat('yyyy-MM-dd').format(selectedMultiDay[i]);
-      switch (day) {
-        case "Mon":
-          code_day = 1;
-          break;
-        case "Tue":
-          code_day = 2;
-          break;
-        case "Wed":
-          code_day = 3;
-          break;
-        case "Thu":
-          code_day = 4;
-          break;
-        case "Fri":
-          code_day = 5;
-          break;
-        case "Sat":
-          code_day = 6;
-          break;
-        case "Sun":
-          code_day = 7;
-          break;
-        default:
+
+    if (selectedMultiDay == null) {
+      for (int i = 0; i < selectedWeeklyDate.length; i++) {
+        Day full_name_day;
+        setdate = selectedWeeklyDate[i];
+        if (selectedWeeklyList[i] != null) {
+          print("day check error : " + selectedWeeklyList[i]);
+          switch (selectedWeeklyList[i]) {
+            case "Mon":
+              code_day = 1;
+              full_name_day = Day.monday;
+              break;
+            case "Tue":
+              code_day = 2;
+              full_name_day = Day.tuesday;
+              break;
+            case "Wed":
+              code_day = 3;
+              full_name_day = Day.wednesday;
+              break;
+            case "Thu":
+              code_day = 4;
+              full_name_day = Day.thursday;
+              break;
+            case "Fri":
+              code_day = 5;
+              full_name_day = Day.friday;
+              break;
+            case "Sat":
+              code_day = 6;
+              full_name_day = Day.saturday;
+              break;
+            case "Sun":
+              code_day = 7;
+              full_name_day = Day.sunday;
+              break;
+            default:
+          }
+
+          for (int i = 0; i < medicine.interval.floor(); i++) {
+            hour = int.parse(gobalselectimeHour[i]);
+            minute = int.parse(gobalselectimeMinite[i]);
+            String dates =
+                code_day.toString() + hour.toString() + minute.toString();
+            int d = int.parse(dates);
+            if (setdate != null) {
+              await AndroidAlarmManager.periodic(
+                Duration(days: 7),
+                d, //fix id
+                callback2,
+                exact: true,
+                wakeup: true,
+                startAt: DateTime.parse('$setdate $hour:$minute:00'),
+              ).then((val) => print('set up:' + val.toString()));
+            }
+            //   await flutterLocalNotificationsPlugin
+            // .showWeeklyAtDayAndTime(20, "test week", "test week", Day.wednesday,
+            //     Time(16, 24, 0), platformChannelSpecifics)
+            // .then((value) => print("success weekly"));
+
+            await flutterLocalNotificationsPlugin
+                .showWeeklyAtDayAndTime(
+                  int.parse(medicine.notificationIDs[i]),
+                  'Mediminder: ${medicine.medicineName}',
+                  medicine.medicineType.toString() !=
+                          MedicineType.None.toString()
+                      ? 'It is time to take your ${medicine.medicineType.toLowerCase()}, according to schedule'
+                      : 'It is time to take your medicine, according to schedule',
+                  full_name_day,
+                  Time(hour, minute, 0),
+                  platformChannelSpecifics,
+                  payload: '${int.parse(medicine.notificationIDs[i])} +success',
+                )
+                .then((value) => print("success weekly : "));
+
+            hour = ogValue;
+            minute = ogmValue;
+          }
+        }
       }
-      print("day : $code_day");
-      for (int i = 0; i < medicine.interval.floor(); i++) {
-        hour = int.parse(gobalselectimeHour[i]);
-        minute = int.parse(gobalselectimeMinite[i]);
-        print("gobalselectimeMinite : " + '${gobalselectimeMinite[i]}');
-        var h = hour;
-        var m = minute;
-        String hs = gobalselectimeHour[i];
-        String ms = gobalselectimeMinite[i];
-        String str1 = "hello";
-        String str2 = "world";
-        String res = str1 + str2;
-        print("The concatenated string : ${res}");
-        String dates = code_day.toString() + h.toString() + m.toString();
-        int d = int.parse(dates);
-        print("The concatenated string : ${d}");
-        // var dateint = int.tryParse(date);
 
-        // String h = gobalselectimeHour[i];
-        // String m = gobalselectimeMinite[i];
+      // await AndroidAlarmManager.oneShotAt(
+      //   DateTime.parse('$setdate 17:50:00'),
+      //   // Ensure we have a unique alarm ID.
+      //   0,
+      //   callback3,
+      //   exact: true,
+      //   wakeup: true,
+      // ).then((val) => print('set up:' + val.toString()));
+      // await AndroidAlarmManager.oneShotAt(
+      //   DateTime.parse('$setdate 17:50:00'),
+      //   // Ensure we have a unique alarm ID.
+      //   0,
+      //   callback3,
+      //   exact: true,
+      //   wakeup: true,
+      // ).then((val) => print('set up:' + val.toString()));
 
-        //print(hour);
-        // if ((hour + (medicine.interval * i) > 23)) {
-        //   // hour = hour + (medicine.interval * i) - 24; //เกิน 24 ชม
+      // await AndroidAlarmManager.cancel(0);
 
-        //   // if (minute + (medicine.minterval * i) > 59) {
-        //   //   hour = hour + 1;
-        //   //   if (hour > 23) {
-        //   //     hour = hour + (medicine.interval * i) - 24;
-        //   //   }
-        //   //   minute = minute + (medicine.minterval * i) - 60;
-        //   // } else {
-        //   //   minute = minute + (medicine.minterval * i);
-        //   // }
-        //   hour = hour;
-        //   minute = minute + 1;
-        print("notify: $hs : $ms");
-        print("notify at : $hour : $minute");
-        // } else {
-        //   // hour = hour + (medicine.interval * i); // ไม่เกิน 24 ขม
-        //   // if (hour > 23) {
-        //   //   hour = hour + (medicine.interval * i) - 24;
-        //   // }
-        //   // if (minute + (medicine.minterval * i) > 59) {
-        //   //   hour = hour + 1;
-        //   //   minute = minute + (medicine.minterval * i) - 60;
-        //   // } else {
-        //   //   minute = minute + (medicine.minterval * i);
-        //   // }
-        //   hour = hour;
-        //   minute = minute + 1;
-        //   print("loop2 | $hour : $minute");
-        // }
-        // print("hour : $hour : minute :$minute");
-        // print("ogValue = $ogValue");
-        // print(medicine.minterval);
-        // var m = 17 + i;
+    } else {
+      for (int i = 0; i < selectedMultiDay.length; i++) {
+        var day = DateFormat('E').format(selectedMultiDay[i]);
+        setdate = DateFormat('yyyy-MM-dd').format(selectedMultiDay[i]);
+        switch (day) {
+          case "Mon":
+            code_day = 1;
+            break;
+          case "Tue":
+            code_day = 2;
+            break;
+          case "Wed":
+            code_day = 3;
+            break;
+          case "Thu":
+            code_day = 4;
+            break;
+          case "Fri":
+            code_day = 5;
+            break;
+          case "Sat":
+            code_day = 6;
+            break;
+          case "Sun":
+            code_day = 7;
+            break;
+          default:
+        }
+        print("day : $code_day");
+        for (int i = 0; i < medicine.interval.floor(); i++) {
+          hour = int.parse(gobalselectimeHour[i]);
+          minute = int.parse(gobalselectimeMinite[i]);
+          print("gobalselectimeMinite : " + '${gobalselectimeMinite[i]}');
+          var h = hour;
+          var m = minute;
+          String hs = gobalselectimeHour[i];
+          String ms = gobalselectimeMinite[i];
+          // String str1 = "hello";
+          // String str2 = "world";
+          // String res = str1 + str2;
+          // print("The concatenated string : ${res}");
+          String dates = code_day.toString() + h.toString() + m.toString();
+          int d = int.parse(dates);
+          print("The concatenated string : ${d}");
+          // var dateint = int.tryParse(date);
 
-        await AndroidAlarmManager.oneShotAt(
-          DateTime.parse('$setdate $hour:$minute:00'),
-          // Ensure we have a unique alarm ID.
-          d,
-          callback2,
-          exact: true,
-          wakeup: true,
-        ).then((val) => print('set up:' + val.toString()));
-        await flutterLocalNotificationsPlugin.showDailyAtTime(
-          int.parse(medicine.notificationIDs[i]),
-          'Mediminder: ${medicine.medicineName}',
-          medicine.medicineType.toString() != MedicineType.None.toString()
-              ? 'It is time to take your ${medicine.medicineType.toLowerCase()}, according to schedule'
-              : 'It is time to take your medicine, according to schedule',
-          Time(hour, minute, 0),
-          platformChannelSpecifics,
-          payload: '${int.parse(medicine.notificationIDs[i])} +success',
-        );
-        // Timer(Duration(minutes: 30), () {
-        //   print("Yeah, this line is printed after 60 second");
-        //   upDate(minute);
-        // });
+          // String h = gobalselectimeHour[i];
+          // String m = gobalselectimeMinite[i];
 
-        print('This line is printed first');
-        hour = ogValue;
-        minute = ogmValue;
-        // print("hour = og : $hour");
+          //print(hour);
+          // if ((hour + (medicine.interval * i) > 23)) {
+          //   // hour = hour + (medicine.interval * i) - 24; //เกิน 24 ชม
+
+          //   // if (minute + (medicine.minterval * i) > 59) {
+          //   //   hour = hour + 1;
+          //   //   if (hour > 23) {
+          //   //     hour = hour + (medicine.interval * i) - 24;
+          //   //   }
+          //   //   minute = minute + (medicine.minterval * i) - 60;
+          //   // } else {
+          //   //   minute = minute + (medicine.minterval * i);
+          //   // }
+          //   hour = hour;
+          //   minute = minute + 1;
+          print("notify: $hs : $ms");
+          print("notify at : $hour : $minute");
+          // } else {
+          //   // hour = hour + (medicine.interval * i); // ไม่เกิน 24 ขม
+          //   // if (hour > 23) {
+          //   //   hour = hour + (medicine.interval * i) - 24;
+          //   // }
+          //   // if (minute + (medicine.minterval * i) > 59) {
+          //   //   hour = hour + 1;
+          //   //   minute = minute + (medicine.minterval * i) - 60;
+          //   // } else {
+          //   //   minute = minute + (medicine.minterval * i);
+          //   // }
+          //   hour = hour;
+          //   minute = minute + 1;
+          //   print("loop2 | $hour : $minute");
+          // }
+          // print("hour : $hour : minute :$minute");
+          // print("ogValue = $ogValue");
+          // print(medicine.minterval);
+          // var m = 17 + i;
+
+          await AndroidAlarmManager.oneShotAt(
+            DateTime.parse('$setdate $hour:$minute:00'),
+            // Ensure we have a unique alarm ID.
+            d,
+            callback2,
+            exact: true,
+            wakeup: true,
+          ).then((val) => print('set up:' + val.toString()));
+
+          await flutterLocalNotificationsPlugin.showDailyAtTime(
+            int.parse(medicine.notificationIDs[i]),
+            'Mediminder: ${medicine.medicineName}',
+            medicine.medicineType.toString() != MedicineType.None.toString()
+                ? 'It is time to take your ${medicine.medicineType.toLowerCase()}, according to schedule'
+                : 'It is time to take your medicine, according to schedule',
+            Time(hour, minute, 0),
+            platformChannelSpecifics,
+            payload: '${int.parse(medicine.notificationIDs[i])} +success',
+          );
+          // Timer(Duration(minutes: 30), () {
+          //   print("Yeah, this line is printed after 60 second");
+          //   upDate(minute);
+          // });
+
+          print('This line is printed first');
+          hour = ogValue;
+          minute = ogmValue;
+          // print("hour = og : $hour");
+        }
       }
     }
 
@@ -777,6 +906,7 @@ class _DatSelectionState extends State<DatSelection> {
                       colorWeekly = false;
                       for (int i = 0; i < selectedWeeklyList.length; i++) {
                         selectedWeeklyList[i] = null;
+                        selectedWeeklyDate[i] = null;
                       }
                       if (selectedMultiDay != null) {
                         selectedMultiDay = null;
@@ -791,6 +921,7 @@ class _DatSelectionState extends State<DatSelection> {
                     } else {
                       for (int i = 0; i < selectedWeeklyList.length; i++) {
                         selectedWeeklyList[i] = null;
+                        selectedWeeklyDate[i] = null;
                       }
                       if (selectedMultiDay != null) {
                         selectedMultiDay = null;
@@ -992,6 +1123,8 @@ class _DatSelectionState extends State<DatSelection> {
   Widget checkbox(String title, bool boolValue) {
     print("weekly :$selectedWeeklyList");
     print("selectday : $selectedMultiDay");
+    print("weekly :$selectedWeeklyDate");
+
     // print("selectdaylength : ${selectedMultiDay.length}");
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1001,62 +1134,161 @@ class _DatSelectionState extends State<DatSelection> {
           value: boolValue,
           onChanged: (bool value) {
             /// manage the state of each value
-
+            var now = DateTime.now();
             setState(() {
               switch (title) {
                 case "Mon":
                   monVal = value;
+                  var nowmon = DateTime.now();
                   if (monVal == true) {
                     selectedWeeklyList[1] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Mon" != DateFormat.E().format(nowmon)) {
+                        nowmon = nowmon.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(nowmon)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Mon" == DateFormat.E().format(nowmon)) {
+                      selectedWeeklyDate[1] =
+                          DateFormat('yyyy-MM-dd').format(nowmon);
+                    }
                   } else {
                     selectedWeeklyList[1] = null;
+                    selectedWeeklyDate[1] = null;
                   }
                   break;
                 case "Tue":
                   tuVal = value;
                   if (tuVal == true) {
                     selectedWeeklyList[2] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Tue" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Tue" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[2] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
                     selectedWeeklyList[2] = null;
+                    selectedWeeklyDate[2] = null;
                   }
                   break;
                 case "Wed":
                   wedVal = value;
                   if (wedVal == true) {
                     selectedWeeklyList[3] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Wed" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Wed" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[3] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
                     selectedWeeklyList[3] = null;
+                    selectedWeeklyDate[3] = null;
                   }
                   break;
                 case "Thu":
                   thurVal = value;
                   if (thurVal == true) {
                     selectedWeeklyList[4] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Thu" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Thu" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[4] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
                     selectedWeeklyList[4] = null;
+                    selectedWeeklyDate[4] = null;
                   }
                   break;
                 case "Fri":
                   friVal = value;
                   if (friVal == true) {
                     selectedWeeklyList[5] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Fri" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Fri" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[5] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
                     selectedWeeklyList[5] = null;
+                    selectedWeeklyDate[5] = null;
                   }
                   break;
                 case "Sat":
                   satVal = value;
                   if (satVal == true) {
                     selectedWeeklyList[6] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Sat" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Sat" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[6] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
                     selectedWeeklyList[6] = null;
+                    selectedWeeklyDate[6] = null;
                   }
                   break;
                 case "Sun":
                   sunVal = value;
                   if (sunVal == true) {
                     selectedWeeklyList[0] = title;
+                    var i = 0;
+                    while (i != 7) {
+                      if ("Sun" != DateFormat.E().format(now)) {
+                        now = now.add(Duration(days: 1));
+                      }
+                      print("day : " + "${DateFormat.E().format(now)}");
+                      print(i);
+                      i++;
+                    }
+                    if ("Sun" == DateFormat.E().format(now)) {
+                      selectedWeeklyDate[0] =
+                          DateFormat('yyyy-MM-dd').format(now);
+                    }
                   } else {
+                    selectedWeeklyDate[0] = null;
                     selectedWeeklyList[0] = null;
                   }
                   break;
