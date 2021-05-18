@@ -31,6 +31,8 @@ import 'package:firebase_core/firebase_core.dart';
 import '../med_detail.dart';
 import 'package:project_final_v2/main.dart';
 
+import 'notificationplugin.dart';
+
 /// The name associated with the UI isolate's [SendPort].
 const String isolateName = 'isolate';
 const String dateKey = 'date';
@@ -43,6 +45,7 @@ List gobalselectimeMinite = new List(12);
 List<DateTime> selectedMultiDay;
 List<dynamic> selectedWeeklyList = new List(7);
 List<dynamic> selectedWeeklyDate = new List(7);
+var idMedicine;
 
 class NewEntry2 extends StatefulWidget {
   @override
@@ -79,6 +82,10 @@ class _NewEntryState extends State<NewEntry2> {
   }
 
   void initState() {
+    super.initState();
+    notificationPlugin.setOnNotificationClick(onNotificationClick);
+    notificationPlugin
+        .setListenerForLowerVersions(onNotificationInLowerVersions);
     AndroidAlarmManager.initialize();
     _newEntryBloc = NewEntryBloc();
     nameController = TextEditingController();
@@ -87,7 +94,10 @@ class _NewEntryState extends State<NewEntry2> {
     _scaffoldKey = GlobalKey<ScaffoldState>();
     initializeNotifications();
     initializeErrorListen();
-    super.initState();
+  }
+
+  onNotificationInLowerVersions(ReceivedNotification receivedNotification) {
+    print('Notification Received ${receivedNotification.id}');
   }
 
   @override
@@ -96,7 +106,7 @@ class _NewEntryState extends State<NewEntry2> {
     final databaseReference = FirebaseDatabase.instance.reference();
     return Scaffold(
       key: _scaffoldKey,
-      resizeToAvoidBottomPadding: false,
+      resizeToAvoidBottomInset: false, //resizeToAvoidBottomPadding
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -316,9 +326,10 @@ class _NewEntryState extends State<NewEntry2> {
                         ),
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       String medicineName;
                       int dosage;
+                      makeIdMedicine();
                       //--------------------Error Checking------------------------
                       //Had to do error checking in UI
                       //Due to unoptimized BLoC value-grabbing architecture
@@ -351,6 +362,7 @@ class _NewEntryState extends State<NewEntry2> {
                       //   return;
                       // }
                       //---------------------------------------------------------
+                      int id = _newEntryBloc.selectedid$.value;
                       String medicineType = _newEntryBloc
                           .selectedMedicineType.value
                           .toString()
@@ -392,6 +404,7 @@ class _NewEntryState extends State<NewEntry2> {
                           selectMutiWeekly.map((i) => i.toString()).toList();
 
                       Medicine newEntryMedicine = Medicine(
+                        id: id,
                         notificationIDs: notificationIDs,
                         medicineName: medicineName,
                         dosage: dosage,
@@ -405,16 +418,22 @@ class _NewEntryState extends State<NewEntry2> {
                         selectWeekly: selectWeekly,
                       );
                       _globalBloc.updateMedicineList(newEntryMedicine);
-                      scheduleNotification(newEntryMedicine);
-
-                      Navigator.pushReplacement(
+                      await scheduleNotification(newEntryMedicine);
+                      // await notificationPlugin.showNotification();
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (BuildContext context) {
-                            return SuccessScreen();
-                          },
+                          builder: (context) => HomePage(), //เปลี่ยนตรงนี้
                         ),
                       );
+                      // Navigator.pushReplacement(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (BuildContext context) {
+                      //       return SuccessScreen();
+                      //     },
+                      //   ),
+                      // );
                     },
                   ),
                 ),
@@ -513,20 +532,44 @@ class _NewEntryState extends State<NewEntry2> {
     return ids;
   }
 
+  makeIdMedicine() {
+    var rnd = Random().nextInt(100);
+    _newEntryBloc.updateId(rnd);
+  }
+
+  var initializationSettings;
   initializeNotifications() async {
     var initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
     final IOSInitializationSettings initializationSettingsIOS =
         IOSInitializationSettings();
     final MacOSInitializationSettings initializationSettingsMacOS =
         MacOSInitializationSettings();
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-            android: initializationSettingsAndroid,
-            iOS: initializationSettingsIOS,
-            macOS: initializationSettingsMacOS);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-        onSelectNotification: onSelectNotification);
+    initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
+        macOS: initializationSettingsMacOS);
+
+    // await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+    //     onSelectNotification: onSelectNotification);
+  }
+
+  // Future onSelectNotification(String payload) async {
+  //   if (payload != null) {
+  //     debugPrint('notification payload: ' + payload);
+  //   }
+  //   await Navigator.push(context, MaterialPageRoute(builder: (context) {
+  //     return NotificationScreen(payload: payload);
+  //   }));
+  // }
+
+  onNotificationClick(String payload) {
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (coontext) {
+      return NotificationScreen(payload: payload);
+    }));
   }
 
   static SendPort uiSendPort;
@@ -569,9 +612,12 @@ class _NewEntryState extends State<NewEntry2> {
       default:
     }
     databaseReference.child('').update({
+      'ID': date.toString().substring(6),
       'Day': sDay,
-      'Time':
-          date.toString().substring(1, 3) + ":" + date.toString().substring(3),
+      'Time': date.toString().substring(1, 3) +
+          ":" +
+          date.toString().substring(3, 5),
+      'Time_slot': date.toString().substring(5, 6)
     });
     print('Alarm fired!' +
         '$date' +
@@ -584,39 +630,65 @@ class _NewEntryState extends State<NewEntry2> {
     uiSendPort?.send(null);
   }
 
-  static Future<void> callback3(int date) async {
-    // var day = date.toString().substring();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child('').update({'Day': date, 'Time': date});
-    print('Alarm fired!' +
-        '$date' +
-        "day" +
-        '${date.toString().substring(0, 1)}');
-    // Get the previous cached count and increment it.
+  // static Future<void> callback3(int date) async {
+  //   // var day = date.toString().substring();
+  //   final databaseReference = FirebaseDatabase.instance.reference();
+  //   databaseReference.child('').update({'Day': date, 'Time': date});
+  //   print('Alarm fired!' +
+  //       '$date' +
+  //       "day" +
+  //       '${date.toString().substring(0, 1)}');
+  //   // Get the previous cached count and increment it.
 
-    // This will be null if we're running in the background.
-    uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
-    uiSendPort?.send(null);
-  }
+  //   // This will be null if we're running in the background.
+  //   uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
+  //   uiSendPort?.send(null);
+  // }
 
-  static Future<void> callback(int date) async {
-    // var day = date.toString().substring();
-    print('test priodic');
-    // Get the previous cached count and increment it.
+  // static Future<void> callback(int date) async {
+  //   // var day = date.toString().substring();
+  //   print('test priodic');
+  //   // Get the previous cached count and increment it.
 
-    // This will be null if we're running in the background.
-    uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
-    uiSendPort?.send(null);
-  }
+  //   // This will be null if we're running in the background.
+  //   uiSendPort ??= IsolateNameServer.lookupPortByName(isolateName);
+  //   uiSendPort?.send(null);
+  // }
 
-  Future onSelectNotification(String payload) async {
-    if (payload != null) {
-      debugPrint('notification payload: ' + payload);
-    }
-    await Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return NotificationClick();
-    }));
-  }
+  // selectNotification(Function onNotificationClick) async {
+  //   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+  //       onSelectNotification: (String payload) async {
+  //     onNotificationClick(payload);
+  //   });
+  // }
+
+  // onNotificationClick(String payload) {
+  //   print('Payload $payload');
+  //   Navigator.push(context, MaterialPageRoute(builder: (coontext) {
+  //     return NotificationScreen(
+  //       payload: payload,
+  //     );
+  //   }));
+  // }
+
+  // Future selectNotification(String payload) async { fix here
+  //   if (payload != null) {
+  //     debugPrint('notification payload: ' + payload);
+  //   }
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) {
+  //       return new AlertDialog(
+  //         title: Text("Your Notification Detail"),
+  //         content: Text("Payload : $payload"),
+  //       );
+  //     },
+  //   );
+  //   // Navigator.pushReplacement(context, newRoute)
+  //   // await Navigator.push(context, MaterialPageRoute(builder: (context) {
+  //   //   return NotificationClick();
+  //   // }));
+  // }
 
   String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -691,8 +763,14 @@ class _NewEntryState extends State<NewEntry2> {
           for (int i = 0; i < medicine.interval.floor(); i++) {
             hour = int.parse(gobalselectimeHour[i]);
             minute = int.parse(gobalselectimeMinite[i]);
-            String dates =
-                code_day.toString() + hour.toString() + minute.toString();
+            var f = NumberFormat("00");
+            var min = f.format(minute);
+            var hr = f.format(hour);
+            int id = _newEntryBloc.selectedid$.value;
+            String dates = code_day.toString() +
+                hr.toString() +
+                min.toString() +
+                id.toString();
             int d = int.parse(dates);
             if (setdate != null) {
               await AndroidAlarmManager.periodic(
@@ -701,7 +779,7 @@ class _NewEntryState extends State<NewEntry2> {
                 callback2,
                 exact: true,
                 wakeup: true,
-                startAt: DateTime.parse('$setdate $hour:$minute:00'),
+                startAt: DateTime.parse('$setdate $hr:$min:00'),
               ).then((val) => print('set up:' + val.toString()));
             }
             //   await flutterLocalNotificationsPlugin
@@ -720,7 +798,7 @@ class _NewEntryState extends State<NewEntry2> {
                   full_name_day,
                   Time(hour, minute, 0),
                   platformChannelSpecifics,
-                  payload: '${int.parse(medicine.notificationIDs[i])} +success',
+                  payload: id.toString(),
                 )
                 .then((value) => print("success weekly : "));
 
@@ -786,12 +864,21 @@ class _NewEntryState extends State<NewEntry2> {
           var m = minute;
           String hs = gobalselectimeHour[i];
           String ms = gobalselectimeMinite[i];
+          var f = NumberFormat("00");
+          var min = f.format(minute);
+          var hr = f.format(hour);
           // String str1 = "hello";
           // String str2 = "world";
           // String res = str1 + str2;
           // print("The concatenated string : ${res}");
-          String dates = code_day.toString() + h.toString() + m.toString();
-          int d = int.parse(dates);
+          int id = _newEntryBloc.selectedid$.value;
+          String dates = code_day.toString() +
+              hr.toString() +
+              min.toString() +
+              medicine.interval.toString() +
+              id.toString();
+          int d = int.parse(dates); //id
+
           print("The concatenated string : ${d}");
           // var dateint = int.tryParse(date);
 
@@ -835,8 +922,9 @@ class _NewEntryState extends State<NewEntry2> {
           // print(medicine.minterval);
           // var m = 17 + i;
 
+          String ms_bit = i.toString().padLeft(2, '0'); //fix bit time here
           await AndroidAlarmManager.oneShotAt(
-            DateTime.parse('$setdate $hour:$minute:00'),
+            DateTime.parse('$setdate $hr:$min:00'),
             // Ensure we have a unique alarm ID.
             d,
             callback2,
@@ -844,16 +932,24 @@ class _NewEntryState extends State<NewEntry2> {
             wakeup: true,
           ).then((val) => print('set up:' + val.toString()));
 
-          await flutterLocalNotificationsPlugin.showDailyAtTime(
-            int.parse(medicine.notificationIDs[i]),
-            'Mediminder: ${medicine.medicineName}',
-            medicine.medicineType.toString() != MedicineType.None.toString()
-                ? 'It is time to take your ${medicine.medicineType.toLowerCase()}, according to schedule'
-                : 'It is time to take your medicine, according to schedule',
-            Time(hour, minute, 0),
-            platformChannelSpecifics,
-            payload: '${int.parse(medicine.notificationIDs[i])} +success',
-          );
+          await flutterLocalNotificationsPlugin
+              .showDailyAtTime(
+                int.parse(medicine.notificationIDs[i]),
+                'Mediminder: ${medicine.medicineName}',
+                medicine.medicineType.toString() != MedicineType.None.toString()
+                    ? 'It is time to take your ${medicine.medicineType.toLowerCase()}, according to schedule'
+                    : 'It is time to take your medicine, according to schedule',
+                Time(hour, minute, 0),
+                platformChannelSpecifics,
+                payload: id.toString(),
+                // payload: '${int.parse(medicine.notificationIDs[i])} +success' +
+                //     '${hour.toString()}' +
+                //     'hr' +
+                //     '${minute.toString()}' +
+                //     'minute' +
+                //     '${_newEntryBloc.selectedid$.value}',
+              )
+              .then((value) => print("success weekly : "));
           // Timer(Duration(minutes: 30), () {
           //   print("Yeah, this line is printed after 60 second");
           //   upDate(minute);
@@ -1382,7 +1478,8 @@ class _IntervalSelectionState extends State<IntervalSelection> {
                                       onSelectedItemChanged: (int index) {
                                         _changedNumber = index;
                                       },
-                                      children: new List<Widget>.generate(10,
+                                      children: new List<Widget>.generate(
+                                          5, //fix interval
                                           (int index) {
                                         return new Center(
                                           child: new Text('${index}'),

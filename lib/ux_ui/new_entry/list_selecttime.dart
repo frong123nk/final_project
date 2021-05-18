@@ -123,7 +123,8 @@ class ListSelectTimeState extends State<ListSelectTime> {
     return SizeTransition(
       sizeFactor: animation,
       child: Card(
-        child: RaisedButton(
+        child: ElevatedButton(
+          onPressed: () {},
           child: Text(
             item,
             style: TextStyle(fontSize: 20),
@@ -137,7 +138,8 @@ class ListSelectTimeState extends State<ListSelectTime> {
     return SizeTransition(
       sizeFactor: animation,
       child: Card(
-        child: RaisedButton(
+        child: ElevatedButton(
+          onPressed: () {},
           child: Text(
             item2,
             style: TextStyle(fontSize: 20),

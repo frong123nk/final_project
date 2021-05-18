@@ -14,6 +14,9 @@ class NewEntryBloc {
   BehaviorSubject<int> _selectedInterval$;
   BehaviorSubject<int> get selectedInterval$ => _selectedInterval$;
 
+  BehaviorSubject<int> _selectedid$;
+  BehaviorSubject<int> get selectedid$ => _selectedid$;
+
   BehaviorSubject<int> _selectedmInterval$;
   BehaviorSubject<int> get selectedmInterval$ => _selectedmInterval$;
 
@@ -33,6 +36,7 @@ class NewEntryBloc {
     _selectedTimeOfDay$ = BehaviorSubject<String>.seeded("None");
     _selectedInterval$ = BehaviorSubject<int>.seeded(0);
     _selectedmInterval$ = BehaviorSubject<int>.seeded(0);
+    _selectedid$ = BehaviorSubject<int>.seeded(0);
     _errorState$ = BehaviorSubject<EntryError>();
     // _selectedManyTimeOfDay$ = BehaviorSubject<dynamic>();
   }
@@ -50,6 +54,10 @@ class NewEntryBloc {
 
   void updateInterval(int interval) {
     _selectedInterval$.add(interval);
+  }
+
+  void updateId(int id) {
+    _selectedid$.add(id);
   }
 
   void updatemInterval(int minterval) {

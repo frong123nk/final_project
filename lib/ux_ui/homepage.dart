@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:project_final_v2/global_bloc.dart';
+import 'package:project_final_v2/ux_ui/home.dart';
 import 'package:project_final_v2/ux_ui/med_detail2.dart';
 import 'package:project_final_v2/ux_ui/new_entry/list_selecttime.dart';
 import 'package:provider/provider.dart';
@@ -36,116 +37,118 @@ class _HomepageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final GlobalBloc _globalBloc = Provider.of<GlobalBloc>(context);
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.green[100], //แถบด้านบน
-        actions: [
-          IconButton(
-              icon: const Icon(
-                Icons.add,
-                color: Colors.black,
-              ),
-              iconSize: 30,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => NewEntry2(), //เปลี่ยนตรงนี้
-                  ),
-                );
-              })
-        ],
-        elevation: 0.0,
-      ),
-      body: Container(
-        color: Colors.green[50],
-        child: Column(
-          children: <Widget>[
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.all(10),
-                ),
-                Container(
-                  child: DatePicker(
-                    DateTime.now(),
-                    width: 60,
-                    height: 80,
-                    controller: _controller,
-                    initialSelectedDate: DateTime.now(),
-                    selectionColor: Colors.green,
-                    selectedTextColor: Colors.white,
-                    inactiveDates: [
-                      // DateTime.now().add(Duration(days: 3)),
-                      // DateTime.now().add(Duration(days: 4)),
-                      // DateTime.now().add(Duration(days: 7))
-                    ],
-                    onDateChange: (date) {
-                      // New date selected
-                      setState(() {
-                        _selectedValue = date;
-
-                        if (_selectedValueText.day == date.day) {
-                          screenDayText = "Today";
-                        } else if (_selectedValue.day ==
-                            _selectedValueText.day + 1) {
-                          screenDayText = "Tomorrow";
-                        } else {
-                          screenDayText = DateFormat('EEEE').format(date);
-                        }
-                        print(date.weekday);
-                        print(DateFormat('EEEE').format(date));
-                      });
-                    },
-                  ),
-                ),
-                Text(
-                  "$screenDayText" +
-                      " , " +
-                      "${_selectedValue.day.toString()} " +
-                      "${DateFormat('MMMM').format(_selectedValue)}",
-                  style: TextStyle(
+    return WillPopScope(
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.green[100], //แถบด้านบน
+            actions: [
+              IconButton(
+                  icon: const Icon(
+                    Icons.add,
                     color: Colors.black,
-                    fontWeight: FontWeight.bold,
+                  ),
+                  iconSize: 30,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NewEntry2(), //เปลี่ยนตรงนี้
+                      ),
+                    );
+                  })
+            ],
+            elevation: 0.0,
+          ),
+          body: Container(
+            color: Colors.green[50],
+            child: Column(
+              children: <Widget>[
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                    ),
+                    Container(
+                      child: DatePicker(
+                        DateTime.now(),
+                        width: 60,
+                        height: 80,
+                        controller: _controller,
+                        initialSelectedDate: DateTime.now(),
+                        selectionColor: Colors.green,
+                        selectedTextColor: Colors.white,
+                        inactiveDates: [
+                          // DateTime.now().add(Duration(days: 3)),
+                          // DateTime.now().add(Duration(days: 4)),
+                          // DateTime.now().add(Duration(days: 7))
+                        ],
+                        onDateChange: (date) {
+                          // New date selected
+                          setState(() {
+                            _selectedValue = date;
+
+                            if (_selectedValueText.day == date.day) {
+                              screenDayText = "Today";
+                            } else if (_selectedValue.day ==
+                                _selectedValueText.day + 1) {
+                              screenDayText = "Tomorrow";
+                            } else {
+                              screenDayText = DateFormat('EEEE').format(date);
+                            }
+                            print(date.weekday);
+                            print(DateFormat('EEEE').format(date));
+                          });
+                        },
+                      ),
+                    ),
+                    Text(
+                      "$screenDayText" +
+                          " , " +
+                          "${_selectedValue.day.toString()} " +
+                          "${DateFormat('MMMM').format(_selectedValue)}",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Flexible(
+                //   flex: 3,
+                //   child: TopContainer(), //TopContainer()
+                // ),
+                SizedBox(
+                  height: 10,
+                ),
+                Flexible(
+                  flex: 5,
+                  child: Provider<GlobalBloc>.value(
+                    child: BottomContainer(_selectedValue), //BottomContainer()
+                    value: _globalBloc,
                   ),
                 ),
               ],
             ),
-
-            // Flexible(
-            //   flex: 3,
-            //   child: TopContainer(), //TopContainer()
-            // ),
-            SizedBox(
-              height: 10,
-            ),
-            Flexible(
-              flex: 5,
-              child: Provider<GlobalBloc>.value(
-                child: BottomContainer(_selectedValue), //BottomContainer()
-                value: _globalBloc,
-              ),
-            ),
-          ],
+          ),
+          // floatingActionButton: FloatingActionButton(
+          //   elevation: 10,
+          //   backgroundColor: HexColor('ffda77'),
+          //   child: Icon(
+          //     Icons.add,
+          //   ),
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => NewEntry2(), //เปลี่ยนตรงนี้
+          //       ),
+          //     );
+          //   },
+          // ),
         ),
-      ),
-      // floatingActionButton: FloatingActionButton(
-      //   elevation: 10,
-      //   backgroundColor: HexColor('ffda77'),
-      //   child: Icon(
-      //     Icons.add,
-      //   ),
-      //   onPressed: () {
-      //     Navigator.push(
-      //       context,
-      //       MaterialPageRoute(
-      //         builder: (context) => NewEntry2(), //เปลี่ยนตรงนี้
-      //       ),
-      //     );
-      //   },
-      // ),
-    );
+        onWillPop: () async => true);
   }
 }
 
@@ -377,7 +380,10 @@ class BottomContainer extends StatelessWidget {
               //       snapshot.data[i].selectWeekly[w]) {
               //     dayList.add(i);
               //   }
-              //   print("getselectweek : ${snapshot.data[i].selectWeekly[w]}");
+              //   p0
+              //
+              //
+              //rint("getselectweek : ${snapshot.data[i].selectWeekly[w]}");
               // }
             } else {
               for (int w = 0; w < snapshot.data[i].selectWeekly.length; w++) {

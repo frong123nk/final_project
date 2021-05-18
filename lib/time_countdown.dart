@@ -73,8 +73,9 @@ class TimerService extends ChangeNotifier {
   }
 
   static TimerService of(BuildContext context) {
-    var provider = context.inheritFromWidgetOfExactType(TimerServiceProvider)
-        as TimerServiceProvider;
+    var provider =
+        context.dependOnInheritedWidgetOfExactType<TimerServiceProvider>()
+            as TimerServiceProvider;
     return provider.service;
   }
 }

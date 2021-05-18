@@ -72,7 +72,7 @@ class MedicineDetails2 extends StatelessWidget {
   Widget build(BuildContext context) {
     final GlobalBloc _globalBloc = Provider.of<GlobalBloc>(context);
     return Scaffold(
-        resizeToAvoidBottomPadding: false,
+        resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -113,7 +113,6 @@ class MedicineDetails2 extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
                 ),
-
                 child: Column(
                   children: [
                     SizedBox(
@@ -622,101 +621,6 @@ class MedicineDetails2 extends StatelessWidget {
                     ),
                   ],
                 ),
-                // child: Column(
-                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //   children: [
-
-                //     // Text(
-                //     //   "${medicine.medicineName}",
-                //     //   style: TextStyle(
-                //     //       fontSize: 25.0, fontWeight: FontWeight.bold),
-                //     // ),
-                //     SizedBox(
-                //       height: 10,
-                //     ),
-                //     Row(
-                //       mainAxisAlignment: MainAxisAlignment.center,
-                //       children: [
-                //         Card(
-                //           color: Colors.black12,
-                //         ),
-                //         Container(
-                //           // padding: EdgeInsets.all(10),
-                //           child: Card(
-                //             child: Expanded(
-                //               child: Column(
-                //                 children: [
-                //                   Text(
-                //                     "Medidcine types",
-                //                     style:
-                //                         TextStyle(fontWeight: FontWeight.bold),
-                //                   ),
-                //                   Row(
-                //                       mainAxisAlignment:
-                //                           MainAxisAlignment.spaceEvenly,
-                //                       children: [
-                //                         FilterChip(
-                //                             backgroundColor: Colors.pink[900],
-                //                             label: Text(
-                //                               medicine.medicineType,
-                //                               style: TextStyle(
-                //                                   color: Colors.tealAccent[100],
-                //                                   fontSize: 20.0,
-                //                                   fontWeight: FontWeight.bold),
-                //                             ),
-                //                             onSelected: (b) {})
-                //                       ]),
-                //                 ],
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //         Expanded(
-                //           child: Column(
-                //             children: [
-                //               Text("Dosage in g",
-                //                   style:
-                //                       TextStyle(fontWeight: FontWeight.bold)),
-                //               Row(
-                //                   mainAxisAlignment:
-                //                       MainAxisAlignment.spaceEvenly,
-                //                   children: [
-                //                     FilterChip(
-                //                         backgroundColor: Colors.pink[900],
-                //                         label: Text(
-                //                           "${medicine.dosage.toString()} " +
-                //                               "mg ",
-                //                           style: TextStyle(
-                //                               color: Colors.tealAccent[100],
-                //                               fontSize: 20.0,
-                //                               fontWeight: FontWeight.bold),
-                //                         ),
-                //                         onSelected: (b) {})
-                //                   ]),
-                //             ],
-                //           ),
-                //         ),
-                //       ],
-                //     ),
-                //     Text("Time ",
-                //         style: TextStyle(fontWeight: FontWeight.bold)),
-                //     Row(
-                //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //       children: medicine.interval == null
-                //           ? <Widget>[Text("This is the final form")]
-                //           : medicine.selectWeekly
-                //               .map((n) => FilterChip(
-                //                     backgroundColor: Colors.green,
-                //                     label: Text(
-                //                       n.toString(),
-                //                       style: TextStyle(color: Colors.white),
-                //                     ),
-                //                     onSelected: (b) {},
-                //                   ))
-                //               .toList(),
-                //     ),
-                //   ],
-                // ),
               ),
             ),
             Align(
@@ -905,26 +809,6 @@ class MainSection extends StatelessWidget {
               ),
             ),
           ),
-          // Column(
-          //   children: <Widget>[
-          //     Hero(
-          //       tag: medicine.medicineName,
-          //       child: Material(
-          //         color: Colors.transparent,
-          //         child: MainInfoTab(
-          //           fieldTitle: "Medicine Name",
-          //           fieldInfo: medicine.medicineName,
-          //         ),
-          //       ),
-          //     ),
-          //     MainInfoTab(
-          //       fieldTitle: "Dosage",
-          //       fieldInfo: medicine.dosage == 0
-          //           ? "Not Specified"
-          //           : medicine.dosage.toString() + " mg",
-          //     )
-          //   ],
-          // )
         ],
       ),
     );
@@ -1024,7 +908,6 @@ class ExtendedSection extends StatelessWidget {
                 ? "Not Specified"
                 : medicine.medicineType,
           ),
-
           ExtendedInfoTab(
             fieldTitle: "Dose Interval",
             fieldInfo: medicine.interval.floor().toString() + " times a days ",
@@ -1070,30 +953,6 @@ class ExtendedSection extends StatelessWidget {
                       ),
                     );
                   })),
-          // SizedBox(
-          //   height: 100,
-          //   child: Expanded(
-          //     child: ListView.builder(
-          //       itemCount: medicine.interval,
-          //       scrollDirection: Axis.horizontal,
-          //       itemBuilder: (BuildContext ctxt, int interval) {
-          //         return new ExtendedInfoTab(
-          //             fieldTitle: "",
-          //             fieldInfo: medicine.timeSelectHours[interval] +
-          //                 ":" +
-          //                 medicine.timeSelectMinute[interval] +
-          //                 'นาฬิกา');
-          //       },
-          //     ),
-          //   ),
-          // ),
-          // ExtendedInfoTab(
-          //     fieldTitle: "At Time",
-          //     fieldInfo: medicine.timeSelect[0] +
-          //         medicine.timeSelect[0] +
-          //         ":" +
-          //         medicine.timeSelect[1] +
-          //         medicine.timeSelect[1]),
         ],
       ),
     );
